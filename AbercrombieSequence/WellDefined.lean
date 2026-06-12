@@ -62,8 +62,9 @@ lemma qrm : r k m = q k m * (m+1) := by
   by_cases hyp : (m+1) ∣ h k m <;> norm_num [hyp]
   · norm_cast
   ring_nf
-  norm_num [dvd_add_self_left]
-  exact Int.dvd_sub_of_emod_eq rfl
+  apply Int.modEq_iff_dvd.1
+  simp only [Int.modEq_modulus_add_iff]
+  exact Int.mod_modEq (↑(h k m)) (1 + ↑m)
 
 lemma rh (m : ℕ) (mpos : m > 0) : h k (m+1) = r k m + bc k m := by
   let mm := m-1
@@ -87,7 +88,7 @@ lemma q_h (m : ℕ) : (q k m - 1) * (m+1) < h k m ∧ h k m ≤ q k m * (m+1) :=
     rw [←qrm k]
     unfold r
     rw [←add_sub]
-    norm_num [bc_lt_m]
+    norm_num [bc_lt_m k m]
   · rw [←qrm k]
     unfold r
     norm_num [bc_nonneg]
@@ -163,7 +164,7 @@ lemma q_stays_const (hyp : ∃m>0, q k m = q k (m+1)) : q_const k := by
     · unfold r
       norm_num
     · rw [sub_le_sub_iff]
-      apply add_le_add_left
+      apply add_le_add_right
       unfold r
       trans ↑(h k m) + bc k m + bc k m
       · norm_num [bc_nonneg]
@@ -201,7 +202,7 @@ lemma need_q_const (hyp : q_const k) : bc_periodic k := by
   rw [←Nat.sub_add_comm (by omega), ←Nat.sub_add_comm (by omega)] at qbc1
   norm_num at qbc1
   have dr_eq_q : r k (m+1) - r k m = q k m := by
-    rw [qrm, qrm, ←h1, Int.ofNat_add]
+    rw [qrm, qrm, ←h1, Nat.cast_add]
     ring
   have dr_eq_q2 : r k (m+2) - r k (m+1) = q k (m+1) := by
     rw [qrm, qrm, h2]
@@ -247,11 +248,10 @@ theorem bc_are_periodic : bc_periodic k := by
   · rcases hyp with ⟨m, hyp⟩
     use m+1
     norm_num [hyp]
-  push_neg at hyp
+  push Not at hyp
   have large_q_decreases : ∀ (m : ℕ), q k (m+1) ≥ ↑m+2 → q k (m+2) < q k (m+1) := by
     intro m m_small
     have h1 := q_nonincreasing k (m+1) (by omega) (by omega)
-    norm_num at h1
     have h2 := hyp m m_small
     symm at h2
     exact Int.lt_iff_le_and_ne.2 ⟨h1, h2⟩
@@ -264,7 +264,7 @@ theorem bc_are_periodic : bc_periodic k := by
     by_cases k=2; subst k; norm_num
     have : k=3 := by omega
     subst k; norm_num
-  push_neg at k_big_enough
+  push Not at k_big_enough
   have base : q k 1 ≥ 2 := by
     unfold q r bc d h
     norm_num
@@ -272,7 +272,7 @@ theorem bc_are_periodic : bc_periodic k := by
   have ⟨m, ⟨hm1, hm2⟩⟩ :
    ∃ m, q k (m+1) ≥ ↑m+2 ∧ q k (m+2) < ↑m+3 := by
     by_contra hyp₁
-    push_neg at hyp₁
+    push Not at hyp₁
     have h1 : ∀ m, ↑m+2 ≤ q k (m+1) := by
       intro m
       induction' m with m ih
@@ -307,7 +307,7 @@ theorem bc_are_periodic : bc_periodic k := by
     norm_num
     have : q k (m+2) > ↑m+1 := by
       by_contra hyp
-      push_neg at hyp
+      push Not at hyp
       have := calc
         (↑m+2) * (↑m+2) = q k (m+1) * (↑m+2) := by nth_rw 1 [←hm]
         _ ≤ q k (m+2) * (↑m+3) := hdr
